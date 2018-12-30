@@ -1,6 +1,6 @@
 package pl.memleak.mmos.homeassistantintegration
 
-import android.content.Context
+import android.content.Intent
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -8,9 +8,6 @@ import android.hardware.SensorManager
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import org.eclipse.paho.android.service.MqttAndroidClient
-import org.eclipse.paho.client.mqttv3.IMqttActionListener
-import org.eclipse.paho.client.mqttv3.IMqttToken
-import org.eclipse.paho.client.mqttv3.MqttConnectOptions
 import org.eclipse.paho.client.mqttv3.MqttMessage
 
 class MainActivity : AppCompatActivity(), SensorEventListener {
@@ -22,33 +19,35 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        mSensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
-        mLight = mSensorManager.getDefaultSensor(Sensor.TYPE_LIGHT)
+        startService(Intent(this, SensorPollService::class.java))
 
-        mMqttClient = MqttAndroidClient(this, "tcp://192.168.7.9:1883", "android")
+//        mSensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+//        mLight = mSensorManager.getDefaultSensor(Sensor.TYPE_LIGHT)
 
-        val options = MqttConnectOptions()
-        options.userName = "homeassistant"
-        options.password = "mqtt".toCharArray()
+//        mMqttClient = MqttAndroidClient(this, "tcp://192.168.7.9:1883", "android")
 
-        try {
-            println("connect")
-            mMqttClient!!.connect(options, null, object : IMqttActionListener {
-                override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
-                    println("connection failed")
-                    exception!!.printStackTrace()
-                }
+//        val options = MqttConnectOptions()
+//        options.userName = "homeassistant"
+//        options.password = "mqtt".toCharArray()
 
-                override fun onSuccess(asyncActionToken: IMqttToken?) {
-                    println("connected")
-                }
+//        try {
+//            println("connect")
+//            mMqttClient!!.connect(options, null, object : IMqttActionListener {
+//                override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
+//                    println("connection failed")
+//                    exception!!.printStackTrace()
+//                }
 
-            })
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+//                override fun onSuccess(asyncActionToken: IMqttToken?) {
+//                    println("connected")
+//                }
 
-        println("ende")
+//            })
+//        } catch (e: Exception) {
+//            e.printStackTrace()
+//        }
+
+//        println("ende")
     }
 
     override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {
@@ -70,12 +69,12 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         // Register a listener for the sensor.
         super.onResume()
 //        mSensorManager.registerListener(this, mPressure, SensorManager.SENSOR_DELAY_NORMAL)
-        mSensorManager.registerListener(this, mLight, SensorManager.SENSOR_DELAY_NORMAL)
+//        mSensorManager.registerListener(this, mLight, SensorManager.SENSOR_DELAY_NORMAL)
     }
 
     override fun onPause() {
         // Be sure to unregister the sensor when the activity pauses.
         super.onPause()
-        mSensorManager.unregisterListener(this)
+//        mSensorManager.unregisterListener(this)
     }
 }

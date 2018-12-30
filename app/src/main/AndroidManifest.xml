@@ -20,6 +20,7 @@
         </activity>
 
         <service android:name="org.eclipse.paho.android.service.MqttService" />
+        <service android:name=".SensorPollService" />
     </application>
 
 </manifest>
