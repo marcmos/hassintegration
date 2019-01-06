@@ -1,46 +1,57 @@
 package pl.memleak.mmos.homeassistantintegration
 
-import android.app.Service
 import android.content.Context
-import android.content.Intent
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import android.hardware.SensorManager.*
-import android.os.IBinder
+import android.hardware.SensorManager.SENSOR_DELAY_FASTEST
 import android.util.Log
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics
+import java.util.*
 
-class SensorPollService : Service(), SensorEventListener {
-    lateinit var mSensorReadings: DescriptiveStatistics
-    lateinit var mSensorManager: SensorManager
-    lateinit var mSensor: Sensor
-
-
-    override fun onBind(intent: Intent?): IBinder? {
-        return null
+class SensorPoll(val context: Context) {
+    companion object {
+        const val TAG = "SensorPoll"
     }
 
-    override fun onCreate() {
-        mSensorReadings = DescriptiveStatistics(5)
-        mSensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
-        mSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_LIGHT)
+    val mSensorReadings: DescriptiveStatistics = DescriptiveStatistics(20)
+    var mMeasurement: Float? = null
+
+    inner class SensorMeasurementListener : SensorEventListener {
+        override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+        }
+
+        override fun onSensorChanged(event: SensorEvent?) {
+            mMeasurement = event!!.values[0]
+            Log.i(TAG, "New sensor value %f".format(mMeasurement))
+        }
+
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d(javaClass.name, "onStartCommand()")
-        mSensorManager.registerListener(this, mSensor, SENSOR_DELAY_FASTEST)
-        return START_STICKY
+    inner class MeasurementTask : TimerTask() {
+        override fun run() {
+            if(mMeasurement != null) {
+                mSensorReadings.addValue(mMeasurement!!.toDouble())
+                Log.i(TAG, "Adding measurement %f".format(mMeasurement))
+            }
+        }
     }
 
-    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
-    }
+    fun poll(): Double {
+        val timer = Timer()
+        val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        val sensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT)
+        val sensorListener = SensorMeasurementListener()
+        sensorManager.registerListener(sensorListener, sensor, SENSOR_DELAY_FASTEST)
 
-    override fun onSensorChanged(event: SensorEvent) {
-        val measurement = event.values[0]
-        mSensorReadings.addValue(measurement.toDouble())
-        Log.d(javaClass.name, "New sensor value: %f, current mean: %f".format(measurement, mSensorReadings.mean))
-    }
+        timer.scheduleAtFixedRate(MeasurementTask(), 0, 1000)
 
+        Thread.sleep(30 * 1000)
+        Log.i(TAG, "Measurement session over, unregistering sensor")
+        timer.cancel()
+        sensorManager.unregisterListener(sensorListener)
+
+        return mSensorReadings.mean
+    }
 }
