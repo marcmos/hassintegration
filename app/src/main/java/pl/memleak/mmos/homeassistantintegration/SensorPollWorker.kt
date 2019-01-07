@@ -6,9 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.net.ConnectivityManager
 import android.net.ConnectivityManager.CONNECTIVITY_ACTION
-import android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET
 import android.net.NetworkInfo
-import android.net.NetworkRequest
 import android.net.wifi.WifiManager
 import android.net.wifi.WifiManager.WIFI_MODE_FULL
 import android.util.Log
@@ -22,7 +20,7 @@ import kotlin.coroutines.suspendCoroutine
 class SensorPollWorker(val context: Context, private val workerParameters: WorkerParameters) :
     Worker(context, workerParameters) {
 
-    fun isConnected(): Boolean? {
+    private fun isConnected(): Boolean? {
         val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val activeNetwork: NetworkInfo? = cm.activeNetworkInfo
         return activeNetwork?.isConnected

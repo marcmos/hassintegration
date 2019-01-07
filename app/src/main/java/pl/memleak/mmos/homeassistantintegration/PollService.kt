@@ -1,29 +1,33 @@
 package pl.memleak.mmos.homeassistantintegration
 
-import android.app.Service
+import android.content.Context
 import android.content.Intent
-import android.os.IBinder
+import android.os.Looper
+import android.support.v4.app.JobIntentService
 import android.util.Log
+import android.widget.Toast
+import android.widget.Toast.LENGTH_LONG
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import java.util.concurrent.TimeUnit
 
-class PollService : Service() {
+class PollService : JobIntentService() {
     companion object {
         const val TAG = "PollService"
+
+        fun enqueueWork(context: Context, intent: Intent) {
+            enqueueWork(context, PollService::class.java, 0, intent);
+        }
     }
 
-    override fun onBind(intent: Intent?): IBinder? {
-        return null
-    }
-
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    override fun onHandleWork(intent: Intent) {
         val clz = SensorPollWorker::class.java
         val pollWork = PeriodicWorkRequest.Builder(clz, 15L, TimeUnit.MINUTES).build()
         WorkManager.getInstance().enqueueUniquePeriodicWork("poll", ExistingPeriodicWorkPolicy.REPLACE,
             pollWork)
-        Log.i(TAG, "Enqueued SensorPollWorker job %s".format(pollWork.id))
-        return START_NOT_STICKY
+
+        val message = "Enqueued SensorPollWorker job %s".format(pollWork.id)
+        Log.i(TAG, message)
     }
 }
