@@ -1,11 +1,11 @@
 package pl.memleak.mmos.homeassistantintegration
 
+import android.app.NotificationManager
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.widget.Button
-import android.widget.Toast
-import android.widget.Toast.LENGTH_LONG
 
 class MainActivity : AppCompatActivity() {
     companion object {
@@ -14,7 +14,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun forceMeasurement() {
         PollService.enqueueWork(this, Intent())
-        Toast.makeText(this, "Enqueued measurement", LENGTH_LONG).show()
     }
 
     public override fun onCreate(savedInstanceState: Bundle?) {

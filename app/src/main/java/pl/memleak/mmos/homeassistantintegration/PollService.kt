@@ -2,6 +2,7 @@ package pl.memleak.mmos.homeassistantintegration
 
 import android.content.Context
 import android.content.Intent
+import android.os.Handler
 import android.os.Looper
 import android.support.v4.app.JobIntentService
 import android.util.Log
@@ -17,7 +18,7 @@ class PollService : JobIntentService() {
         const val TAG = "PollService"
 
         fun enqueueWork(context: Context, intent: Intent) {
-            enqueueWork(context, PollService::class.java, 0, intent);
+            enqueueWork(context, PollService::class.java, 0, intent)
         }
     }
 

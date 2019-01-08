@@ -1,5 +1,6 @@
 package pl.memleak.mmos.homeassistantintegration
 
+import android.app.NotificationManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -9,6 +10,7 @@ import android.net.ConnectivityManager.CONNECTIVITY_ACTION
 import android.net.NetworkInfo
 import android.net.wifi.WifiManager
 import android.net.wifi.WifiManager.WIFI_MODE_FULL
+import android.support.v4.app.NotificationCompat
 import android.util.Log
 import androidx.work.Worker
 import androidx.work.WorkerParameters
@@ -26,54 +28,79 @@ class SensorPollWorker(val context: Context, private val workerParameters: Worke
         return activeNetwork?.isConnected
     }
 
+
+    private fun <Result> withNotification(f: () -> Result): Result {
+        val notificationManager = (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+
+        val notification = NotificationCompat.Builder(context)
+            .setContentTitle("Notification title")
+            .setContentText("Notification text")
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setOngoing(true)
+            .build()
+
+        notificationManager.notify(0, notification)
+
+        return try {
+            f()
+        } finally {
+            notificationManager.cancel(0)
+        }
+    }
+
     override fun doWork(): Result {
-        Log.i(TAG, "Started %s".format(workerParameters.id))
+        return withNotification {
+            Log.i(TAG, "Started %s".format(workerParameters.id))
 
-        val readout = SensorPoll(context).poll()
+            val readout = SensorPoll(context).poll()
 
-        if(readout == Double.NaN) {
-            Log.w(TAG, "NaN readout, skipping MQTT push")
-            return Result.failure()
-        } else {
-            Log.i(TAG, "Publishing sensor readout %f".format(readout))
-            val mqttPush = MqttPush(context)
+            if (readout == Double.NaN) {
+                Log.w(TAG, "NaN readout, skipping MQTT push")
+                Result.failure()
+            } else {
+                Log.i(TAG, "Publishing sensor readout %f".format(readout))
+                val mqttPush = MqttPush(context)
 
-            val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-            val wifiLock = wifiManager.createWifiLock(WIFI_MODE_FULL, TAG)
+                val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+                val wifiLock = wifiManager.createWifiLock(WIFI_MODE_FULL, TAG)
 
-            wifiLock.acquire()
+                wifiLock.acquire()
 
-            val connected = isConnected()!!
-            if(connected) {
-                Log.i(TAG, "Network is connected")
-            } else
-            if(!connected) {
-                Log.w(TAG, "Network is disconnected, awaiting network...")
+                val connected = isConnected()!!
+                if (connected) {
+                    Log.i(TAG, "Network is connected")
+                } else
+                    if (!connected) {
+                        Log.w(TAG, "Network is disconnected, awaiting network...")
 
-                runBlocking { withTimeout(60 * 1000) {
-                    suspendCoroutine<Unit> {
-                        context.registerReceiver(object : BroadcastReceiver() {
-                            override fun onReceive(context: Context?, intent: Intent?) {
-                                it.resume(Unit)
+                        runBlocking {
+                            withTimeout(60 * 1000) {
+                                suspendCoroutine<Unit> {
+                                    context.registerReceiver(object : BroadcastReceiver() {
+                                        override fun onReceive(context: Context?, intent: Intent?) {
+                                            it.resume(Unit)
+                                        }
+                                    }, IntentFilter(CONNECTIVITY_ACTION))
+                                }
                             }
-                        }, IntentFilter(CONNECTIVITY_ACTION))
+                        }
                     }
-                } }
-            }
 
-            return try {
-                runBlocking { mqttPush.pubSingle(readout.toString()) }
-                Log.i(TAG, "MQTT publish succeeded")
+                try {
+                    runBlocking { mqttPush.pubSingle(readout.toString()) }
+                    Log.i(TAG, "MQTT publish succeeded")
 
-                Result.success()
-            } catch (e: Exception) {
-                Log.e(TAG, "MQTT publish failed", e)
-                Result.retry()
-            } finally {
-                wifiLock.release()
-                Log.w(TAG, "WiFi lock released")
+                    Result.success()
+                } catch (e: Exception) {
+                    Log.e(TAG, "MQTT publish failed", e)
+                    Result.retry()
+                } finally {
+                    wifiLock.release()
+                    Log.w(TAG, "WiFi lock released")
+                }
             }
         }
+
     }
 
     companion object {
