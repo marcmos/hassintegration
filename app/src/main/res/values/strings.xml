@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">HomeAssistant Integration</string>
+    <string name="ongoing_measurement">Measuring light intensity…</string>
 </resources>
