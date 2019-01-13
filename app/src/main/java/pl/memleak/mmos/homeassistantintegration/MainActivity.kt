@@ -25,5 +25,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         forceMeasurement()
+
+        startService(Intent(this, ShakeRecognizerService::class.java))
     }
 }

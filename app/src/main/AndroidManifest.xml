@@ -5,6 +5,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
             android:allowBackup="true"
@@ -23,6 +24,7 @@
 
         <service android:name="org.eclipse.paho.android.service.MqttService" />
         <service android:name=".PollService" />
+        <service android:name=".ShakeRecognizerService" />
     </application>
 
 </manifest>

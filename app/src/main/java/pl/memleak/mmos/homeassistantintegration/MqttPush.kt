@@ -10,7 +10,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
-class MqttPush(val context: Context) {
+class MqttPush(val context: Context, val topic: String) {
     private suspend fun connect(client: MqttAndroidClient, options: MqttConnectOptions): IMqttToken? {
         return suspendCoroutine {
             client.connect(options, null, object : IMqttActionListener {
@@ -60,7 +60,7 @@ class MqttPush(val context: Context) {
         options.password = "mqtt".toCharArray()
 
         connect(mqttClient, options)
-        publish(mqttClient, "home-assistant/light", MqttMessage(value.toByteArray()))
+        publish(mqttClient, topic, MqttMessage(value.toByteArray()))
         disconnect(mqttClient)
     }
 

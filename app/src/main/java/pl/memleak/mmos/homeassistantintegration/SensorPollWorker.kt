@@ -68,7 +68,7 @@ class SensorPollWorker(val context: Context, private val workerParameters: Worke
                 Result.failure()
             } else {
                 Log.i(TAG, "Publishing sensor readout %f".format(readout))
-                val mqttPush = MqttPush(context)
+                val mqttPush = MqttPush(context, "home-assistant/light")
 
                 val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
                 val wifiLock = wifiManager.createWifiLock(WIFI_MODE_FULL, TAG)
